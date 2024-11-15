@@ -22,9 +22,10 @@ const sankey = d3Sankey.sankey()
   .extent([[1, 5], [width - 1, height - 5]]);
 
 async function init() {
-  const data = await d3.json("data/data_sankey.json");
+  const data = await d3.json("data/jmu.json");
   // Applies it to the data. We make a copy of the nodes and links objects
   // so as to avoid mutating the original.
+  console.log(data);
   const { nodes, links } = sankey({
   // const tmp = sankey({
     nodes: data.nodes.map(d => Object.assign({}, d)),
