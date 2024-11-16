@@ -21,7 +21,7 @@ const sankey = d3Sankey.sankey()
   .nodePadding(10)
   .extent([[1, 5], [width - 1, height - 5]]);
 
-function jmuFinancialNodes(data){
+function jmuFinancialNodes(data) {
   //return array of objects
   //should have name, title
   return [
@@ -33,13 +33,45 @@ function jmuFinancialNodes(data){
   ];
 }
 
+function jmuPositiveItems(data) {
+  const positiveItems = [];
+  data.forEach(item => {
+    if (item.delta > 0) {
+      positiveItems.push(item.name);
+    }
+  });
+  console.log("positive:" + positiveItems);
+  return positiveItems;
+}
+
+function jmuRevenueCategories(data) {
+  const revenue = [];
+  data.forEach(item => {
+      revenue.push(item.type);
+  });
+  console.log("revenue:" + revenue);
+  return revenue;
+}
+
+function jmuNegativeItems(data) {
+  return [];
+}
+
+function jmuExpense(data) {
+  return [];
+}
+
+function jmuFinancialLinks(data) {
+  return [];
+}
+
 function jmuNodesAndLinks(jmuData) {
   const data = jmuData["jmu-revenues"];
   const results = {
     nodes: jmuFinancialNodes(data),
     links: jmuFinancialLinks(data)
     //relate the sections?
-    //
+    //I have no idea what im supposed to do:(
   };
   return results;
 }
