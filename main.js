@@ -21,8 +21,32 @@ const sankey = d3Sankey.sankey()
   .nodePadding(10)
   .extent([[1, 5], [width - 1, height - 5]]);
 
+function jmuFinancialNodes(data){
+  //return array of objects
+  //should have name, title
+  return [
+    ...jmuPositiveItems(data),
+    ...jmuRevenueCategories(data),
+    "JMU",
+    ...jmuNegativeItems(data),
+    ...jmuExpense(data)
+  ];
+}
+
+function jmuNodesAndLinks(jmuData) {
+  const data = jmuData["jmu-revenues"];
+  const results = {
+    nodes: jmuFinancialNodes(data),
+    links: jmuFinancialLinks(data)
+    //relate the sections?
+    //
+  };
+  return results;
+}
+
 async function init() {
-  const data = await d3.json("data/jmu.json");
+  const jmuData = await d3.json("data/jmu.json");
+  const data = jmuNodesAndLinks(jmuData);
   // Applies it to the data. We make a copy of the nodes and links objects
   // so as to avoid mutating the original.
   console.log(data);
