@@ -6,12 +6,6 @@ const height = 600;
 const format = d3.format(",.0f");
 const linkColor = "source-target"; // source, target, source-target, or a color string.
 
-// Create a SVG container.
-const svg = d3.create("svg")
-  .attr("width", width)
-  .attr("height", height)
-  .attr("viewBox", [0, 0, width, height])
-  .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
 
 // Constructs and configures a Sankey generator.
 const sankey = d3Sankey.sankey()
@@ -21,76 +15,166 @@ const sankey = d3Sankey.sankey()
   .nodePadding(10)
   .extent([[1, 5], [width - 1, height - 5]]);
 
-function jmuFinancialNodes(data) {
-  //return array of objects
-  //should have name, title
-  return [
-    ...jmuPositiveItems(data),
-    ...jmuRevenueCategories(data),
-    "JMU",
-    ...jmuNegativeItems(data),
-    ...jmuExpense(data)
-  ];
-}
+  const data = await d3.json("data/jmu.json");
 
-function jmuPositiveItems(data) {
-  const positiveItems = [];
-  data.forEach(item => {
-    if (item.delta > 0) {
-      positiveItems.push(item.name);
+function data1() {
+
+  const studentCost = data["student-costs"];
+  var linkId = 4;
+  const jmuNodes = [
+    {name:1, title:"JMU Student", category:1, value:1},
+    {name:2, title:"Fall", category:2, value:2},
+    {name:3, title:"Spring", category:3, value:3}
+  ];
+  const jmuLinks = [
+    {source:1,target:2,value:0},
+    {source:1,target:3,value:0},
+  ];
+
+  studentCost.forEach(element => {
+    if(element.type === "student itemized") {
+      const semId = element.semester === "Fall" ? 2 : 3;
+      jmuLinks[semId-2].value += element["in-state"];
+      jmuNodes.push({name:linkId, title: element.name, category:4, value:1});
+      jmuLinks.push({source:semId, target:linkId, value:element["in-state"]})
+      linkId++;
     }
   });
-  console.log("positive:" + positiveItems);
-  return positiveItems;
+  return {nodes:jmuNodes, links:jmuLinks};
 }
 
-function jmuRevenueCategories(data) {
-  const revenue = [];
-  data.forEach(item => {
-      revenue.push(item.type);
+function data2() {
+  const studentCost = data["student-costs"];
+  const feeNodes = [
+    {name:1, title:"Auxiliary Comprehensive Fee", category: 1, value: 100}
+  ];
+
+  const feeLinks = [];
+  var linkId = 3;
+
+  studentCost.forEach(element => {
+    if(element.type === "Auxiliary Comprehensive Fee Component") {
+      feeNodes.push({name: linkId, title:element.name, category: linkId, value: 1});
+      feeLinks.push({source: 1, target: linkId, value: element["amount"]});
+    }
+  })
+  return {nodes: feeNodes, links: feeLinks};
+}
+
+function data3() {
+  const revenues = data["jmu-revenues"];
+  const nodes = [{name:1, title: "Nonoperating revenues", category: 2, value: 2},
+    {name: 2, title: "Income before other revenues, expenses, gains, or losses", category:2, value:2},
+    {name: 3, title: "Operating revenues", category: 2, value: 2},
+    {name: 4, title: "JMU", category: 3, value: 3},
+    {name: 5, title: "Nonoperating revenues 2", category:4, value: 4},
+    {name: 6, title: "Operating Expense", category: 4, value: 4}
+  ];
+
+  const titles = ["none", "Nonoperating revenues", "Income before other revenues, expenses, gains, or losses",
+      "Operating revenues", "JMU", "Nonoperating revenues 2", "Operating Expense"
+    ];
+
+    const links = [{source: 1, target: 4, value: 1},
+      {source: 2, target: 4, value: 1},
+      {source: 3, target: 4, value: 1},
+      {source: 4, target: 5, value: 1},
+      {source: 4, target: 6, value: 1}
+    ];
+
+    let rev = 7;
+    revenues.forEach(element => {
+      if(element.category === "income") {
+        nodes.push({name: rev, title: element.name, category: 1, value: 1});
+        let typeRev = titles.indexOf(element.type);
+        links.push({source: rev, target: typeRev, value: (element[2023] + element[2022])});
+        const index = links.findIndex(element=> element.source == typeRev && element.target == 4);
+        if (index !== -1) {
+          links[index].value += (element[2023] + element[2022]);
+        }
+      } else {
+        nodes.push({name: rev, title: element.name, category:5, value: 5});
+        if(element.type == "Nonoperating revenues"){
+          links.push({source: 5, target: rev, value: (element[2022] + element[2023])});
+          const index = links.findIndex(element=> element.source == 4 && element.target == 5);
+          if (index !== -1) {
+            links[index].value += (element[2023] + element[2022]);
+          }
+      } else {
+          let typeExpense = titles.indexOf(element.type);
+          links.push({source: typeExpense, target: rev, value: (element[2022] + element[2023])});
+          const index = links.findIndex(element=> element.source == 4 && element.target == typeExpense);
+          if (index !== -1) {
+            links[index].value += (element[2023] + element[2022]);
+          }
+      }
+    }
+    rev++;
   });
-  console.log("revenue:" + revenue);
-  return revenue;
+  return {nodes: nodes, links: links};
 }
 
-function jmuNegativeItems(data) {
-  return [];
+function data4() {
+  const athletics = data["jmu-athletics"];
+  const nodes = [{name: 1, title: "Football", category: 1, value: 1},
+    {name: 2, title: "Men's Basketball", category: 1, value: 1},
+    {name: 3, title: "Women's Basketball", category: 1, value: 1},
+    {name: 4, title: "Other sports", category: 1, value: 1},
+    {name: 5, title: "Non-Program Specific", category: 1, value: 1},
+    {name: 6, title: "JMU Athletics", category: 3, value: 3},
+    {name: 7, title: "Football", category: 5, value: 5},
+    {name: 8, title: "Men's Basketball", category: 5, value: 5},
+    {name: 9, title: "Women's Basketball", category: 5, value: 5},
+    {name: 10, title: "Other sports", category: 5, value: 5},
+    {name: 11, title: "Non-Program Specific", category: 5, value: 5}
+  ];
+  const revenueMap = ["none", "Football", "Men's Basketball", "Other sports", "Non-Program Specific"];
+  const expenseMap = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "Football", "Men's Basketball", "Other sports", "Non-Program Specific"];
+  const links = [];
+
+  let num = 12;
+  athletics.forEach(element=> {
+    if(element.type == "Operating Revenues") {
+      nodes.push({name: num, title: element.name, category: 2, value: 2});
+      links.push({source: 1, target: num, value: element["Football"]});
+      links.push({source: 2, target: num, value: element["Men's Basketball"]});
+      links.push({source: 3, target: num, value: element["Women's Basketball"]});
+      links.push({source: 4, target: num, value: element["Other sports"]});
+      links.push({source: 5, target: num, value: element["Non-Program Specific"]});
+      links.push({source: num, target: 6, value: element["Total"]});
+    } else {
+      nodes.push({name: num, title: element.name, category: 4, value: 4});
+      links.push({source: num, target: 7, value: element["Football"]});
+      links.push({source: num, target: 8, value: element["Men's Basketball"]});
+      links.push({source: num, target: 9, value: element["Women's Basketball"]});
+      links.push({source: num, target: 10, value: element["Other sports"]});
+      links.push({source: num, target: 11, value: element["Non-Program Specific"]});
+      links.push({source: 6, target: num, value: element["Total"]});
+    }
+    num++;
+  })
+  return {nodes: nodes, links: links};
 }
 
-function jmuExpense(data) {
-  return [];
-}
 
-function jmuFinancialLinks(data) {
-  return [];
-}
-
-function jmuNodesAndLinks(jmuData) {
-  const data = jmuData["jmu-revenues"];
-  const results = {
-    nodes: jmuFinancialNodes(data),
-    links: jmuFinancialLinks(data)
-    //relate the sections?
-    //I have no idea what im supposed to do:(
-  };
-  return results;
-}
-
-async function init() {
-  const jmuData = await d3.json("data/jmu.json");
-  const data = jmuNodesAndLinks(jmuData);
+async function init(id, wrangle) {
+  //const data = await d3.json("data/data_sankey.json");
   // Applies it to the data. We make a copy of the nodes and links objects
   // so as to avoid mutating the original.
-  console.log(data);
+
+  const sankeyData = wrangle();
+
   const { nodes, links } = sankey({
-  // const tmp = sankey({
-    nodes: data.nodes.map(d => Object.assign({}, d)),
-    links: data.links.map(d => Object.assign({}, d))
+    //const tmp = sankey({
+      nodes: sankeyData.nodes,
+      links: sankeyData.links
   });
 
-  // console.log('tmp', tmp);
-  console.log('nodes', nodes);
-  console.log('links', links);
+  const svg = d3.create("svg")
+  .attr("width", width)
+  .attr("height", height)
+  .attr("viewBox", [0, 0, width, height])
+  .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
 
   // Defines a color scale.
   const color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -111,7 +195,8 @@ async function init() {
   rect.append("title")
     .text(d => {
       console.log('d', d);
-      return `${d.name}\n${format(d.value)}`});
+      return `${d.name}\n${format(d.value)}`
+    });
 
   // Creates the paths that represent the links.
   const link = svg.append("g")
@@ -159,7 +244,7 @@ async function init() {
     .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
     .text(d => d.title);
 
-    // Adds labels on the links.
+  // Adds labels on the links.
   svg.append("g")
     .selectAll()
     .data(links)
@@ -178,8 +263,12 @@ async function init() {
     });
 
   const svgNode = svg.node();
-    document.body.appendChild(svgNode);
+  document.getElementById(id).appendChild(svgNode);
   return svgNode;
 }
 
-init();
+
+init("one", data1);
+init("two", data2);
+init("three", data3);
+init("four", data4);
